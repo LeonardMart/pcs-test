@@ -8,6 +8,8 @@ const dummyNotificationData = [
     id: 1,
     type: "Reimbursement",
     status: "paid",
+    submission_request: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    reimburse: "50,000",
     date: "2025-02-18T14:30:00Z",
     seen: false,
   },

@@ -6,6 +6,8 @@ interface Notification {
   status: string;
   date: string;
   seen: boolean;
+  submission_request?: string
+  reimburse?: string
 }
 
 interface NotificationState {
