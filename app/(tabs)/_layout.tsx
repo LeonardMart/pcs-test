@@ -8,10 +8,14 @@ import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import CheckoutIcon from "@/assets/icon/checkout";
 import SettingIcon from "@/assets/icon/setting";
+import { useAppDispatch, useAppSelector } from "@/hooks/reduxHooks";
+import { setCheckOut } from "@/store/user/userSlice";
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-  
+  const user = useAppSelector((state) => state.user.user);
+
+  const dispatch = useAppDispatch();
+
   return (
     <Tabs
       screenOptions={{
@@ -59,7 +63,11 @@ export default function TabLayout() {
               }}
             >
               <TouchableOpacity
-                onPress={() => console.log("Check Out Pressed")}
+                onPress={() => {
+                  if (!user?.check_out) {
+                    dispatch(setCheckOut());
+                  }
+                }}
                 style={{
                   backgroundColor: "#EF4444",
                   width: 50,

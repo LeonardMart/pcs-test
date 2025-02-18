@@ -7,6 +7,7 @@ import {
   NativeSyntheticEvent,
   NativeScrollEvent,
   TouchableOpacity,
+  Pressable,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import BellIcon from "@/assets/icon/bell";
@@ -16,11 +17,12 @@ import ClockSixthIcon from "@/assets/icon/clockSixth";
 import TimerIcon from "@/assets/icon/timer";
 //@ts-ignore
 import HTMLView from "react-native-htmlview";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import { Link } from "expo-router";
 import "dayjs/locale/id";
-import { useAppSelector } from "@/hooks/reduxHooks";
+import { useAppDispatch, useAppSelector } from "@/hooks/reduxHooks";
+import { setCheckIn } from "@/store/user/userSlice";
 
 const dummyNewsData = [
   {
@@ -99,9 +101,11 @@ const dummyOnlineUsers = [
 
 const HomeScreen = () => {
   const [activeIndex, setActiveIndex] = useState<Number>(0);
+  const [workingHours, setWorkingHours] = useState("00:00:00");
   const { width } = Dimensions.get("window");
   const notif = useAppSelector((state) => state.notifications.notifications);
   const user = useAppSelector((state) => state.user.user);
+  const dispatch = useAppDispatch();
 
   const unreadCount = notif.filter((n) => !n.seen).length;
   const max_online_user = 7;
@@ -111,6 +115,12 @@ const HomeScreen = () => {
     const index = Math.round(contentOffsetX / width);
     setActiveIndex(index);
   };
+  const formatTime = (time: string | null) => {
+    console.log("check", time);
+    if (!time) return "--:--";
+    const date = new Date(time);
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  };
 
   const formatDate = (dateString: string) => {
     const date = dayjs(dateString).locale("id");
@@ -119,6 +129,38 @@ const HomeScreen = () => {
       date: date.format("DD MMMM YYYY"),
     };
   };
+
+  const calculateElapsedTime = () => {
+    const checkInTime = new Date(user?.check_in ?? "").getTime();
+    const endTime = user?.check_out
+      ? new Date(user.check_out).getTime()
+      : new Date().getTime();
+    console.log("check end", endTime);
+
+    if (endTime < checkInTime) return;
+
+    const elapsed = Math.floor((endTime - checkInTime) / 1000);
+    const hours = String(Math.floor(elapsed / 3600)).padStart(2, "0");
+    const minutes = String(Math.floor((elapsed % 3600) / 60)).padStart(2, "0");
+    const seconds = String(elapsed % 60).padStart(2, "0");
+    console.log("elapsed", `${hours}:${minutes}:${seconds}`);
+    console.log("workingHours1", workingHours);
+    setWorkingHours(`${hours}:${minutes}:${seconds}`);
+    console.log("workingHours2", workingHours);
+  };
+
+  useEffect(() => {
+    if (!user?.check_in && !user?.check_out) {
+      setWorkingHours("00:00:00");
+      return;
+    }
+    if (!user?.check_out) {
+      const interval = setInterval(calculateElapsedTime, 1000);
+      return () => clearInterval(interval);
+    } else {
+      calculateElapsedTime();
+    }
+  }, [user?.check_in, user?.check_out]);
 
   return (
     <SafeAreaView className="bg-white">
@@ -201,19 +243,29 @@ const HomeScreen = () => {
           <View className="flex flex-col">
             <Text className="text-lg font-bold">Today's activity</Text>
             <View className="flex flex-row p-4 justify-between">
-              <View className="flex flex-col items-center justify-center gap-1">
+              <Pressable
+                onPress={() => dispatch(setCheckIn())}
+                disabled={user?.check_in ? true : false}
+                className="flex flex-col items-center justify-center gap-1"
+              >
                 <ClockEightIcon width={36} height={36} color="#ef4444" />
-                <Text className="font-bold text-xl">08.30</Text>
+                <Text className="font-bold text-xl">
+                  {formatTime(user?.check_in ?? null)}
+                </Text>
                 <Text className="font-normal text-base">Check In</Text>
-              </View>
+              </Pressable>
               <View className="flex flex-col items-center justify-center gap-1">
                 <TimerIcon width={36} height={36} color="#ef4444" />
-                <Text className="font-bold text-xl text-red-500">03:00:00</Text>
+                <Text className="font-bold text-xl text-red-500">
+                  {workingHours}
+                </Text>
                 <Text className="font-normal text-base">Working Hours</Text>
               </View>
               <View className="flex flex-col items-center justify-center gap-1">
                 <ClockSixthIcon width={36} height={36} color="#ef4444" />
-                <Text className="font-bold text-xl">--:--</Text>
+                <Text className="font-bold text-xl">
+                  {formatTime(user?.check_out ?? null)}
+                </Text>
                 <Text className="font-normal text-base">Check Out</Text>
               </View>
             </View>

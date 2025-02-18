@@ -7,6 +7,8 @@ interface User {
   role: string;
   join_date: string;
   location: string;
+  check_in: string;
+  check_out: string;
 }
 
 interface UserState {
@@ -24,8 +26,18 @@ const userSlice = createSlice({
     setUser: (state, action: PayloadAction<User>) => {
       state.user = action.payload;
     },
+    setCheckIn: (state) => {
+      if (state.user) {
+        state.user.check_in = new Date().toISOString();
+      }
+    },
+    setCheckOut: (state) => {
+      if (state.user) {
+        state.user.check_out = new Date().toISOString();
+      }
+    },
   },
 });
 
-export const { setUser } = userSlice.actions;
+export const { setUser, setCheckIn, setCheckOut } = userSlice.actions;
 export default userSlice.reducer;
